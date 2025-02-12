@@ -1,0 +1,42 @@
+import bpy
+import requests
+
+SERVER_URL = "http://127.0.0.1:5000/transform"
+
+class OBJECT_PT_CustomPanel(bpy.types.Panel):
+    bl_label = "DCC Plugin"
+    bl_idname = "OBJECT_PT_custom_panel"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "DCC Plugin"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("object.send_transform")
+
+class OBJECT_OT_SendTransform(bpy.types.Operator):
+    bl_label = "Send Transform"
+    bl_idname = "object.send_transform"
+
+    def execute(self, context):
+        obj = context.active_object
+        if obj:
+            transform_data = {
+                "position": list(obj.location),
+                "rotation": list(obj.rotation_euler),
+                "scale": list(obj.scale)
+            }
+            response = requests.post(SERVER_URL, json=transform_data)
+            print(response.json())
+        return {'FINISHED'}
+
+def register():
+    bpy.utils.register_class(OBJECT_PT_CustomPanel)
+    bpy.utils.register_class(OBJECT_OT_SendTransform)
+
+def unregister():
+    bpy.utils.unregister_class(OBJECT_PT_CustomPanel)
+    bpy.utils.unregister_class(OBJECT_OT_SendTransform)
+
+if __name__ == "__main__":
+    register()

@@ -1,0 +1,79 @@
+import os
+import sqlite3
+import time
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# --- Fix: Define Absolute Path for the Database ---
+DB_PATH = r"C:\\Users\\Ramya\Downloads\\Projetcs\\DCC Integration\\database"
+DB_FILE = os.path.join(DB_PATH, "inventory.db")
+
+
+# Ensure the database directory exists
+if not os.path.exists(DB_PATH):
+    os.makedirs(DB_PATH)  # Create directory if it doesn't exist
+
+# --- Database Initialization ---
+def init_db():
+    try:
+        conn = sqlite3.connect(DB_FILE)  # Use absolute path
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS inventory (name TEXT PRIMARY KEY, quantity INTEGER)")
+        conn.commit()
+        conn.close()
+        print(f"Database initialized at: {DB_FILE}")
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+
+init_db()
+
+# --- Helper Function to Simulate Delay ---
+def delay_response(data, status=200):
+    time.sleep(10)  # Simulate 10-second delay
+    return jsonify(data), status
+
+# --- API Endpoints ---
+@app.route('/')
+def home():
+    return "Flask Server is Running. Use API endpoints to interact."
+
+@app.route('/transform', methods=['POST'])
+def transform():
+    data = request.json
+    print(f"Received transform data: {data}")
+    return delay_response({"message": "Transform received", "data": data})
+
+@app.route('/file-path', methods=['GET'])
+def file_path():
+    project_path = request.args.get('projectpath', 'false') == 'true'
+    return delay_response({"path": "/path/to/file.ma" if not project_path else "/path/to/project"})
+
+@app.route('/add-item', methods=['POST'])
+def add_item():
+    data = request.json
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO inventory (name, quantity) VALUES (?, ?)", (data['name'], data['quantity']))
+        conn.commit()
+        conn.close()
+        return delay_response({"message": "Item added"})
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/update-quantity', methods=['PUT'])
+def update_quantity():
+    data = request.json
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE inventory SET quantity=? WHERE name=?", (data['new_quantity'], data['name']))
+        conn.commit()
+        conn.close()
+        return delay_response({"message": "Quantity updated"})
+    except sqlite3.Error as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

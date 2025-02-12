@@ -1,0 +1,36 @@
+import sys
+import requests
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
+
+SERVER_URL = "http://127.0.0.1:5000"
+
+class InventoryApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        self.label = QLabel("Inventory will be displayed here.")
+        layout.addWidget(self.label)
+
+        self.refresh_btn = QPushButton("Refresh Inventory")
+        self.refresh_btn.clicked.connect(self.load_inventory)
+        layout.addWidget(self.refresh_btn)
+
+        self.setLayout(layout)
+        self.setWindowTitle("Inventory Manager")
+
+    def load_inventory(self):-
+        response = requests.get(f"{SERVER_URL}/file-path")
+        if response.status_code == 200:
+            self.label.setText(f"File Path: {response.json()['path']}")
+        else:-
+            self.label.setText("Error fetching data.")
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = InventoryApp()
+    ex.show()
+    sys.exit(app.exec_())
